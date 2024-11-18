@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Weather App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.4.0/fonts/remixicon.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        :root {
+            --bg-color: #000;
+            --text-color: #fff;
+            --card-bg: linear-gradient(135deg, #4B6CB7 0%, #182848 100%);
+            --detail-bg: rgba(255, 255, 255, 0.1);
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .light-mode {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --card-bg: linear-gradient(135deg, #89c4ff 0%, #4B6CB7 100%);
+            --detail-bg: rgba(255, 255, 255, 0.2);
+            --border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .main {
+            width: 100%;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .weather-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 24px;
+            width: 320px;
+            min-height: 500px;
+            position: relative;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            background: var(--detail-bg);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .search-bar {
+            background: var(--detail-bg);
+            border-radius: 50px;
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .search-bar input {
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--text-color);
+            width: 100%;
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .search-bar input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-bar button {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .weather-main {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .location {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .temperature {
+            font-size: 64px;
+            font-weight: 600;
+            margin: 16px 0;
+        }
+
+        .condition {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .weather-details {
+            background: var(--detail-bg);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        #w-icon {
+            width: 80px;
+            height: 80px;
+            margin: 16px auto;
+        }
+
+        .forecast {
+            margin-top: 20px;
+            background: var(--detail-bg);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .forecast-title {
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .forecast-items {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+            padding-bottom: 8px;
+        }
+
+        .forecast-item {
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .forecast-time {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+        }
+
+        .forecast-temp {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            border-radius: 24px;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .weather-card {
+                width: 100%;
+                max-width: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main">
+        <div class="weather-card">
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <i class="ri-sun-line" id="theme-icon"></i>
+            </button>
+            <div class="search-bar">
+                <input type="text" id="city" placeholder="Search city..." onkeypress="handleKeyPress(event)">
+                <button onclick="getWeather()"><i class="ri-search-line"></i></button>
+            </div>
+            <div id="weather-data">
+                <div class="weather-main">
+                    <div class="location" id="loca">Enter a city</div>
+                    <img id="w-icon" src="" alt="">
+                    <div class="temperature" id="temp"></div>
+                    <div class="condition" id="par"></div>
+                </div>
+                <div class="weather-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Feels like</span>
+                        <span id="fl"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Humidity</span>
+                        <span id="hum"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Visibility</span>
+                        <span id="visi"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Wind Speed</span>
+                        <span id="ws"></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Temperature (°F)</span>
+                        <span id="fh"></span>
+                    </div>
+                </div>
+                <div class="forecast">
+                    <div class="forecast-title">24-Hour Forecast</div>
+                    <div class="forecast-items" id="forecast-container"></div>
+                </div>
+            </div>
+            <div class="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isDarkMode = true;
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('light-mode');
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = isDarkMode ? 'ri-sun-line' : 'ri-moon-line';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                getWeather();
+            }
+        }
+
+        function showLoading() {
+            document.querySelector('.loading').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading').classList.remove('active');
+        }
+
+        function formatTime(date) {
+            return new Date(date).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                hour12: true
+            });
+        }
+
+        async function getWeather() {
+            const maincity = document.querySelector("#city").value;
+            if (!maincity) return;
+
+            showLoading();
+            try {
+                // Get current weather
+                const currentResponse = await axios.get(
+                    `https://api.weatherapi.com/v1/current.json?key=bc95a555c96041ed99970949220107&q=${maincity}`
+                );
+                const currentData = currentResponse.data;
+
+                // Get forecast
+                const forecastResponse = await axios.get(
+                    `https://api.weatherapi.com/v1/forecast.json?key=bc95a555c96041ed99970949220107&q=${maincity}&days=1&hour=24`
+                );
+                const forecastData = forecastResponse.data;
+
+                // Update current weather
+                document.querySelector("#w-icon").src = `https:${currentData.current.condition.icon}`;
+                document.querySelector("#temp").innerText = `${currentData.current.temp_c}°`;
+                document.querySelector("#par").innerText = currentData.current.condition.text;
+                
+                const location = `${currentData.location.name}, ${currentData.location.country}`;
+                document.querySelector("#loca").innerText = location;
+                
+                document.querySelector("#fh").innerText = `${currentData.current.temp_f}°F`;
+                document.querySelector("#fl").innerText = `${currentData.current.feelslike_c}°C`;
+                document.querySelector("#hum").innerText = `${currentData.current.humidity}%`;
+                document.querySelector("#visi").innerText = `${currentData.current.vis_km}km`;
+                document.querySelector("#ws").innerText = `${currentData.current.wind_kph}km/h`;
+
+                // Update forecast
+                const forecastContainer = document.querySelector("#forecast-container");
+                forecastContainer.innerHTML = '';
+
+                forecastData.forecast.forecastday[0].hour
+                    .filter((hour, index) => index % 3 === 0) // Show every 3 hours
+                    .forEach(hour => {
+                        const forecastItem = document.createElement('div');
+                        forecastItem.className = 'forecast-item';
+                        forecastItem.innerHTML = `
+                            <div class="forecast-time">${formatTime(hour.time)}</div>
+                            <img src="https:${hour.condition.icon}" alt="${hour.condition.text}" style="width: 40px; height: 40px;">
+                            <div class="forecast-temp">${hour.temp_c}°</div>
+                        `;
+                        forecastContainer.appendChild(forecastItem);
+                    });
+            } catch (error) {
+                console.error("Error fetching weather data:", error);
+                alert("Error fetching weather data. Please try again.");
+            } finally {
+                hideLoading();
+            }
+        }
+    </script>
+</body>
+</html>
